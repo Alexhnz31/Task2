@@ -1,0 +1,257 @@
+<apex:page controller="InvoiceController" 
+           renderAs="pdf" 
+           applyBodyTag="false" 
+           showHeader="false" 
+           applyHtmlTag="false"
+           sidebar="false">
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-size: 9pt; /* Уменьшен основной размер шрифта */
+            color: #333;
+            margin: 0;
+            padding: 0;
+            line-height: 1.4; /* Уменьшен межстрочный интервал */
+        }
+        
+        .top-line {
+            height: 3pt;
+            background-color: #ff4700;
+            margin-bottom: 15pt;
+        }
+
+        .header {
+            display: table;
+            width: 100%;
+            margin-bottom: 15pt; /* Уменьшен отступ */
+            padding-bottom: 10pt; /* Уменьшен отступ */
+            border-bottom: 1pt solid #ddd;
+        }
+
+        .logo-section {
+            display: table-cell;
+            width: 30%;
+            vertical-align: top;
+        }
+
+        .logo-placeholder {
+            width: 60pt; /* Уменьшенный размер */
+            height: 60pt; /* Уменьшенный размер */
+            background: #f8f9fa;
+            border: 1pt solid #ddd;
+            border-radius: 4pt;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 7pt;
+            text-align: center;
+        }
+
+        .company-info {
+            display: table-cell;
+            width: 40%;
+            vertical-align: top;
+            padding: 0 8pt; /* Уменьшен отступ */
+            font-size: 8pt; /* Уменьшен размер шрифта */
+        }
+
+        .company-name {
+            font-size: 11pt; /* Уменьшен размер */
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 4pt; /* Уменьшен отступ */
+        }
+
+        .opportunity-owner {
+            margin-top: 3pt;
+            font-size: 8pt; /* Уменьшен размер */
+            color: #666;
+        }
+
+        .invoice-info {
+            display: table-cell;
+            width: 30%;
+            vertical-align: top;
+            text-align: right;
+            font-size: 8pt; /* Уменьшен размер шрифта */
+        }
+
+        .invoice-detail {
+            margin-bottom: 4pt;
+            position: relative;
+            padding-bottom: 6pt; /* Уменьшен отступ */
+        }
+
+        .invoice-label {
+            font-weight: bold;
+            display: inline-block;
+            width: 70pt; /* Уменьшен размер */
+            color: #555;
+        }
+        
+        .invoice-hr {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 50pt; /* Уменьшен размер */
+            border: none;
+            border-top: 1pt solid #3498db;
+            margin: 0;
+        }
+
+        .bill-to-section {
+            margin: 20pt 0 15pt; /* Уменьшены отступы */
+            padding: 0 0 10pt 0; 
+            border-bottom: 1pt solid #ddd;
+        }
+
+        .section-title {
+            font-size: 9pt; /* Уменьшен размер */
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 6pt; /* Уменьшен отступ */
+        }
+
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15pt 0 5pt; /* Уменьшены отступы */
+            font-size: 8.5pt; /* Уменьшен размер шрифта таблицы */
+        }
+
+        .products-table th {
+            background: #ff4700; /* Оранжевый фон */
+            color: white; /* Белый текст */
+            padding: 6pt 8pt; /* Уменьшен padding */
+            text-align: left;
+            font-weight: bold;
+            border-bottom: 1pt solid #ddd;
+            font-size: 8.5pt; /* Уменьшен размер шрифта */
+        }
+
+        .products-table td {
+            padding: 6pt 8pt; /* Уменьшен padding */
+            border-bottom: 1pt solid #eee;
+            font-size: 8.5pt; /* Уменьшен размер шрифта */
+        }
+        
+        /* Новая строка для итогов */
+        .totals-row {
+            background: #f8f9fa;
+        }
+        
+        .totals-label {
+            text-align: right;
+            font-weight: bold;
+            padding-right: 10pt !important; /* Уменьшен отступ */
+            font-size: 9pt; /* Уменьшен размер */
+        }
+        
+        .totals-value {
+            font-weight: bold;
+        }
+        
+        .final-amount {
+            color: #e91e63;
+            font-size: 10pt; /* Уменьшен размер */
+        }
+
+        .footer {
+            margin-top: 20pt; /* Уменьшен отступ */
+            padding: 8pt 0; /* Уменьшен padding */
+            text-align: center;
+            font-size: 8pt;
+            background-color: #ff4700; /* Оранжевый фон */
+            color: white; /* Белый текст */
+            border-top: 1pt solid #ddd;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Тонкая оранжевая линия вверху -->
+    <div class="top-line"></div>
+
+    <div class="header">
+        <div class="logo-section">
+            <div class="logo-placeholder">
+                COMPANY<br/>LOGO
+            </div>
+        </div>
+
+        <div class="company-info">
+            <div class="company-name">{!companyName}</div>
+            <div>{!companyAddress}</div>
+        <div class="opportunity-owner">Opportunity Owner: {!opportunityOwner}</div>
+
+
+        </div>
+
+        <div class="invoice-info">
+            <div class="invoice-detail">
+                <span class="invoice-label">DATE:</span> {!todayDate}
+                <div class="invoice-hr"></div>
+            </div>
+            <div class="invoice-detail">
+                <span class="invoice-label">INVOICE NO:</span> {!invoiceNumber}
+                <div class="invoice-hr"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bill-to-section">
+        <div class="section-title">Bill To</div>
+        <div>Contact Name : {!contactName}</div>
+        <div>Account Name : {!accountName}</div>
+        <div>Contact Phone : {!contactPhone}</div>
+        <div>Contact Email : {!contactEmail}</div>
+    </div>
+
+    <table class="products-table">
+        <thead>
+            <tr>
+                <th>PRODUCT NAME</th>
+                <th>QTY</th>
+                <th>UNIT PRICE</th>
+                <th>TOTAL</th>
+            </tr>
+        </thead>
+        <tbody>
+            <apex:repeat value="{!products}" var="item">
+                <tr>
+                    <td>{!item.productName}</td>
+                    <td><apex:outputText value="{0,number,#,##0}"><apex:param value="{!item.quantity}" /></apex:outputText></td>
+                    <td>{!currencySymbol} <apex:outputText value="{0,number,#,##0.00}"><apex:param value="{!item.unitPrice}" /></apex:outputText></td>
+                    <td>{!currencySymbol} <apex:outputText value="{0,number,#,##0.00}"><apex:param value="{!item.totalPrice}" /></apex:outputText></td>
+                </tr>
+            </apex:repeat>
+            
+            <!-- Строка с итогами -->
+            <tr class="totals-row">
+                <td colspan="2"></td>
+                <td class="totals-label">BALANCE DUE:</td>
+                <td class="totals-value final-amount">
+                    {!currencySymbol} 
+                    <apex:outputText value="{0,number,#,##0.00}">
+                        <apex:param value="{!totalAmount}" />
+                    </apex:outputText>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <div>{!companyName} | {!companyAddress}</div>
+    </div>
+</body>
+</html>
+</apex:page>
