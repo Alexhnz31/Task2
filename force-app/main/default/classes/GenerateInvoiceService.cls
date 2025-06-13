@@ -18,7 +18,6 @@ public with sharing class GenerateInvoiceService {
         ];
 
         if (!existingDocs.isEmpty()) {
-            // Создать новую версию файла
             ContentVersion newVersion = new ContentVersion(
                 ContentDocumentId = existingDocs[0].Id,
                 VersionData = fileBody,
@@ -27,7 +26,6 @@ public with sharing class GenerateInvoiceService {
             );
             insert newVersion;
         } else {
-            // Создать новый файл
             ContentVersion cv = new ContentVersion(
                 VersionData = fileBody,
                 Title = fileName,
@@ -35,7 +33,6 @@ public with sharing class GenerateInvoiceService {
             );
             insert cv;
 
-            // Связать с Opportunity
             cv = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv.Id];
             ContentDocumentLink cdl = new ContentDocumentLink(
                 ContentDocumentId = cv.ContentDocumentId,

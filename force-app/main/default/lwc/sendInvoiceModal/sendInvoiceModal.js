@@ -31,11 +31,20 @@ export default class SendInvoiceModal extends LightningElement {
     invoiceId = '';
 
     _dataLoaded = false;
+    outsideClickHandler; // <- ключевая переменная
 
     @wire(getRecord, { recordId: '$recordId', fields: OPPORTUNITY_FIELDS })
     opportunity;
 
-    // Загружаем данные при первом рендере и наличии recordId
+    connectedCallback() {
+        this.outsideClickHandler = this.handleOutsideClick.bind(this);
+        document.addEventListener('click', this.outsideClickHandler);
+    }
+
+    disconnectedCallback() {
+        document.removeEventListener('click', this.outsideClickHandler);
+    }
+
     async renderedCallback() {
         if (this.recordId && !this._dataLoaded) {
             this._dataLoaded = true;
@@ -50,7 +59,6 @@ export default class SendInvoiceModal extends LightningElement {
                 return;
             }
 
-            // Получаем контакт
             const contact = await getPrimaryContact({ opportunityId: this.recordId });
 
             if (!contact || !contact.email) {
@@ -168,6 +176,19 @@ export default class SendInvoiceModal extends LightningElement {
 
     handleCancel() {
         this.closeAction();
+    }
+
+    handleOutsideClick(event) {
+        const modal = this.template.querySelector('.slds-p-around_medium');
+        const panel = this.template.querySelector('lightning-quick-action-panel');
+        const path = event.composedPath();
+
+        const clickedInsideModal = modal && path.includes(modal);
+        const clickedInsidePanel = panel && path.includes(panel);
+
+        if (!clickedInsideModal && clickedInsidePanel) {
+            this.closeAction();
+        }
     }
 
     showSuccess(title, message) {

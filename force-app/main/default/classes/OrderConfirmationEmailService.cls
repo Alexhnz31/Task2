@@ -1,5 +1,20 @@
 global class OrderConfirmationEmailService implements Messaging.InboundEmailHandler {
     
+    // Define the stage progression order
+    private static final List<String> STAGE_PROGRESSION = new List<String>{
+        'Prospecting',
+        'Qualification',
+        'Needs Analysis',
+        'Value Proposition',
+        'Id. Decision Makers',
+        'Perception Analysis',
+        'Proposal/Price Quote',
+        'Negotiation/Review',
+        'Pending Confirmation',
+        'Closed Won',
+        'Closed Lost'
+    };
+    
     global Messaging.InboundEmailResult handleInboundEmail(
         Messaging.InboundEmail email,
         Messaging.InboundEnvelope envelope
@@ -23,18 +38,19 @@ global class OrderConfirmationEmailService implements Messaging.InboundEmailHand
                 return result;
             }
             
-          List<String> allowedStages = new List<String>{'Pending Confirmation', 'Prospecting', 'Negotiation'};
-if (!allowedStages.contains(opp.StageName)) {
-    result.success = false;
-    result.message = '❌ Сделка не в подходящем статусе для подтверждения';
-    return result;
-}
-            
             String response = parseResponse(email.plainTextBody);
             
             if ('APPROVED'.equalsIgnoreCase(response)) {
-                opp.StageName = 'Closed Won'; 
-                result.message = '✅ Сделка подтверждена, статус изменен на "Closed Won"';
+                // Move to next stage for approval
+                String nextStage = getNextStage(opp.StageName);
+                if (nextStage != null) {
+                    opp.StageName = nextStage;
+                    result.message = '✅ Сделка подтверждена, статус изменен на "' + nextStage + '"';
+                } else {
+                    result.success = false;
+                    result.message = '❌ Сделка уже находится на финальном этапе';
+                    return result;
+                }
             } 
             else if ('REJECTED'.equalsIgnoreCase(response)) {
                 opp.StageName = 'Closed Lost'; 
@@ -75,7 +91,6 @@ if (!allowedStages.contains(opp.StageName)) {
     }
     
     private String parseResponse(String emailBody) {
-        
         if (emailBody.contains('Approved') || emailBody.contains('approve') || 
             emailBody.contains('Подтверждаю') || emailBody.contains('Согласен')) {
             return 'APPROVED';
@@ -85,5 +100,13 @@ if (!allowedStages.contains(opp.StageName)) {
             return 'REJECTED';
         }
         return null;
+    }
+    
+    private String getNextStage(String currentStage) {
+        Integer currentIndex = STAGE_PROGRESSION.indexOf(currentStage);
+        if (currentIndex == -1 || currentIndex == STAGE_PROGRESSION.size() - 1) {
+            return null; // Current stage not found or already at last stage
+        }
+        return STAGE_PROGRESSION[currentIndex + 1];
     }
 }

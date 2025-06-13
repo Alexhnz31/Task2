@@ -1,6 +1,6 @@
 <template>
-    <lightning-quick-action-panel header="Send Invoice">
-        <div class="slds-p-around_medium">
+    <lightning-quick-action-panel header="Send Invoice" onclick={handleOutsideClick}>
+        <div class="slds-p-around_medium" onclick={handleModalClick}>
             <!-- Subject field -->
             <lightning-input
                 label="Subject"

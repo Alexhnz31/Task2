@@ -1,124 +1,77 @@
 <template>
-    <!-- Loading spinner -->
-    <template if:true={loading}>
-        <lightning-spinner alternative-text="Загрузка статистики продаж..." size="medium"></lightning-spinner>
-    </template>
-
-    <!-- Error display -->
-    <template if:true={error}>
-        <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
-            <span class="slds-assistive-text">error</span>
-            <h2>Произошла ошибка при загрузке данных. Пожалуйста, обновите страницу или обратитесь к администратору.</h2>
-        </div>
-    </template>
-
-    <!-- Search and Filter Section (visible only in list view) -->
-    <template if:false={isRecordPage}>
-        <lightning-card title="Поиск и фильтры">
-            <div class="slds-p-around_medium slds-grid slds-grid_align-spread slds-wrap">
-                <lightning-input 
-                    type="search" 
-                    label="Поиск по имени аккаунта" 
-                    class="slds-size_1-of-2 slds-p-right_small"
-                    onchange={handleSearchChange}>
-                </lightning-input>
-                <lightning-input 
-                    type="number" 
-                    label="Минимальная сумма сделок" 
-                    class="slds-size_1-of-2 slds-p-left_small"
-                    formatter="currency"
-                    onchange={handleAmountChange}>
-                </lightning-input>
-            </div>
-        </lightning-card>
-    </template>
-
-    <!-- Main Content -->
-    <lightning-card title="Статистика продаж">
+    <lightning-card title="Sales Statistics" icon-name="standard:account">
         <div class="slds-p-around_medium">
+
+            <!-- Search and filter -->
+            <lightning-input
+                type="search"
+                label="Поиск по названию аккаунта"
+                value={searchTerm}
+                onchange={handleSearchChange}>
+            </lightning-input>
+
+            <lightning-input
+                type="number"
+                label="Минимальная сумма Opportunities"
+                value={minAmount}
+                onchange={handleAmountChange}>
+            </lightning-input>
+
+            <!-- Accounts and Opportunities -->
             <template if:true={hasAccounts}>
-                <lightning-accordion allow-multiple-sections-open>
-                    <template for:each={accounts} for:item="account">
-                        <lightning-accordion-section 
-                            key={account.id} 
-                            name={account.id} 
-                            label={account.accordionLabel}>
-                            <template if:true={account.opportunities.length}>
-                                <lightning-datatable
-                                    key-field="id"
-                                    data={account.opportunities}
-                                    columns={columns}
-                                    hide-checkbox-column
-                                    onrowaction={handleRowAction}>
-                                </lightning-datatable>
-                            </template>
-                            <template if:false={account.opportunities.length}>
-                                <div class="slds-text-body_regular">Нет закрытых сделок для этого аккаунта</div>
-                            </template>
+                <template for:each={accounts} for:item="account">
+                    <lightning-accordion key={account.id}>
+                        <lightning-accordion-section name={account.id} label={account.accordionLabel}>
+                            <lightning-datatable
+                                key-field="id"
+                                data={account.opportunities}
+                                columns={columns}
+                                onrowaction={handleRowAction}>
+                            </lightning-datatable>
                         </lightning-accordion-section>
-                    </template>
-                </lightning-accordion>
+                    </lightning-accordion>
+                </template>
             </template>
-            <template if:false={hasAccounts}>
-                <div class="slds-illustration slds-illustration_small">
-                    <div class="slds-text-longform">
-                        <h3 class="slds-text-heading_medium">Нет данных для отображения</h3>
-                        <p class="slds-text-body_regular">Попробуйте изменить параметры поиска или фильтрации</p>
-                    </div>
-                </div>
+            <template if:true={loading}>
+                <lightning-spinner alternative-text="Loading"></lightning-spinner>
+            </template>
+            <template if:true={error}>
+                <div class="slds-text-color_error">{error}</div>
             </template>
 
-            <!-- Pagination (visible only in list view) -->
-            <template if:false={isRecordPage}>
-                <div class="slds-p-top_medium slds-align_absolute-center">
-                    <lightning-button-group>
-                        <lightning-button 
-                            label="Назад" 
-                            onclick={handlePrevious} 
-                            disabled={isFirstPage}>
-                        </lightning-button>
-                        <lightning-button 
-                            label="Вперёд" 
-                            onclick={handleNext} 
-                            disabled={isLastPage}>
-                        </lightning-button>
-                    </lightning-button-group>
-                    <div class="slds-p-left_medium">
-                        Страница {currentPage} из {totalPages}
-                    </div>
-                </div>
-            </template>
+            <!-- Pagination -->
+            <div class="slds-m-top_medium">
+                <lightning-button
+                    label="Предыдущая"
+                    onclick={handlePrevious}
+                    disabled={isFirstPage}>
+                </lightning-button>
+                <span class="slds-m-horizontal_small">Страница {currentPage} из {totalPages}</span>
+                <lightning-button
+                    label="Следующая"
+                    onclick={handleNext}
+                    disabled={isLastPage}>
+                </lightning-button>
+            </div>
         </div>
     </lightning-card>
 
-    <!-- Products Modal -->
+    <!-- Modal -->
     <template if:true={isModalOpen}>
         <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
             <div class="slds-modal__container">
                 <header class="slds-modal__header">
-                    <h2 class="slds-text-heading_medium">
-                        Товары для сделки: {selectedOpportunityName}
-                    </h2>
-                    <button class="slds-button slds-button_icon slds-modal__close" onclick={closeModal}>
-                        <lightning-icon icon-name="utility:close" size="small"></lightning-icon>
-                    </button>
+                    <h2 class="slds-modal__title">{selectedOpportunityName} — Продукты</h2>
                 </header>
-                <div class="slds-modal__content slds-p-around_medium">
-                    <template if:true={loading}>
-                        <lightning-spinner alternative-text="Загрузка товаров..." size="small"></lightning-spinner>
-                    </template>
+                <div class="slds-modal__content">
                     <lightning-datatable
                         key-field="id"
                         data={opportunityProducts}
-                        columns={productColumns}
-                        hide-checkbox-column>
+                        columns={productColumns}>
                     </lightning-datatable>
                 </div>
                 <footer class="slds-modal__footer">
-                    <lightning-button 
-                        label="Закрыть" 
-                        onclick={closeModal}>
-                    </lightning-button>
+                    <lightning-button variant="neutral" label="Закрыть" onclick={closeModal}></lightning-button>
                 </footer>
             </div>
         </section>

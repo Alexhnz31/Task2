@@ -1,4 +1,4 @@
-import { LightningElement, wire, api } from 'lwc';
+import { LightningElement, wire, api, track } from 'lwc';
 import { NavigationMixin } from 'lightning/navigation';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getAccountOpportunities from '@salesforce/apex/SalesStatisticsController.getAccountOpportunities';
@@ -61,8 +61,7 @@ const CONSTANTS = {
 export default class SalesStatistics extends NavigationMixin(LightningElement) {
     @api recordId;
     @api flexipageRegionWidth;
-    
-    // State tracking variables
+
     loading = false;
     error;
     totalRecords = 0;
@@ -76,16 +75,16 @@ export default class SalesStatistics extends NavigationMixin(LightningElement) {
     accounts = [];
 
     columns = [
-        { 
+        {
             label: CONSTANTS.LABELS.OPPORTUNITY_NAME,
             fieldName: CONSTANTS.FIELD_NAMES.NAME_URL,
             type: CONSTANTS.COLUMN_TYPES.URL,
-            typeAttributes: { 
+            typeAttributes: {
                 label: { fieldName: CONSTANTS.FIELD_NAMES.NAME },
                 target: CONSTANTS.TARGET.BLANK
             }
         },
-        { 
+        {
             label: CONSTANTS.LABELS.CREATED_DATE,
             fieldName: CONSTANTS.FIELD_NAMES.CREATED_DATE,
             type: CONSTANTS.COLUMN_TYPES.DATE,
@@ -95,7 +94,7 @@ export default class SalesStatistics extends NavigationMixin(LightningElement) {
                 day: CONSTANTS.DATETYPE.DAY
             }
         },
-        { 
+        {
             label: CONSTANTS.LABELS.CLOSE_DATE,
             fieldName: CONSTANTS.FIELD_NAMES.CLOSE_DATE,
             type: CONSTANTS.COLUMN_TYPES.DATE,
@@ -105,7 +104,7 @@ export default class SalesStatistics extends NavigationMixin(LightningElement) {
                 day: CONSTANTS.DATETYPE.DAY
             }
         },
-        { 
+        {
             label: CONSTANTS.LABELS.AMOUNT,
             fieldName: CONSTANTS.FIELD_NAMES.AMOUNT,
             type: CONSTANTS.COLUMN_TYPES.CURRENCY
@@ -124,94 +123,93 @@ export default class SalesStatistics extends NavigationMixin(LightningElement) {
     ];
 
     productColumns = [
-        { 
+        {
             label: CONSTANTS.LABELS.PRODUCT,
             fieldName: CONSTANTS.FIELD_NAMES.PRODUCT_NAME,
             type: CONSTANTS.COLUMN_TYPES.TEXT
         },
-        { 
+        {
             label: CONSTANTS.LABELS.QUANTITY,
             fieldName: CONSTANTS.FIELD_NAMES.QUANTITY,
             type: CONSTANTS.COLUMN_TYPES.NUMBER
         },
-        { 
+        {
             label: CONSTANTS.LABELS.TOTAL_PRICE,
             fieldName: CONSTANTS.FIELD_NAMES.TOTAL_PRICE,
             type: CONSTANTS.COLUMN_TYPES.CURRENCY
         }
     ];
 
+    // Используем recordId как accountId для фильтрации (если нужно)
+    get accountId() {
+        return this.recordId || null;
+    }
+
     @wire(getAccountOpportunities, {
-        accountId: '$recordId',
+        accountId: '$accountId',
         searchTerm: '$searchTerm',
         minAmount: '$minAmount',
         pageSize: '$pageSize',
         pageNumber: '$currentPage'
     })
     wiredAccounts({ error, data }) {
-        this.loading = true;
-        try {
-            console.log('Apex data (full):', JSON.stringify(data, null, 2));
-            console.log('Apex error:', error);
-            if (data) {
-                const formatter = new Intl.NumberFormat('ru-RU', {
-                    style: 'currency',
-                    currency: 'RUB'
-                });
-                this.accounts = data.accounts.map(account => ({
-                    ...account,
-                    accordionLabel: `${account.name} (Всего: ${formatter.format(account.totalAmount)})`,
-                    opportunities: account.opportunities.map(opp => ({
-                        ...opp,
-                        nameUrl: CONSTANTS.URL_PREFIX + opp.id
-                    }))
-                }));
-                console.log('LWC accounts:', this.accounts);
-                this.totalRecords = data.totalRecords;
-                this.error = undefined;
-            } else if (error) {
-                this.handleError(error);
-            }
-        } catch (err) {
-            this.handleError(err);
-        } finally {
+        if (data) {
+            const formatter = new Intl.NumberFormat('ru-RU', {
+                style: 'currency',
+                currency: 'RUB'
+            });
+            this.accounts = data.accounts.map(account => ({
+                ...account,
+                accordionLabel: `${account.name} (Всего: ${formatter.format(account.totalAmount)})`,
+                opportunities: account.opportunities.map(opp => ({
+                    ...opp,
+                    nameUrl: CONSTANTS.URL_PREFIX + opp.id
+                }))
+            }));
+            this.totalRecords = data.totalRecords;
+            this.error = undefined;
+            this.loading = false;
+        } else if (error) {
+            this.handleError(error);
             this.loading = false;
         }
     }
 
-    // Search and filter handlers
+    // Ставим loading = true при начале нового запроса
     handleSearchChange(event) {
+        this.loading = true;
         this.searchTerm = event.target.value;
         this.currentPage = 1;
     }
 
     handleAmountChange(event) {
+        this.loading = true;
         this.minAmount = event.target.value ? parseFloat(event.target.value) : null;
         this.currentPage = 1;
     }
 
-    // Pagination handlers
     handleNext() {
         if (this.currentPage < this.totalPages) {
-            this.currentPage = this.currentPage + 1;
+            this.loading = true;
+            this.currentPage += 1;
         }
     }
 
     handlePrevious() {
         if (this.currentPage > 1) {
-            this.currentPage = this.currentPage - 1;
+            this.loading = true;
+            this.currentPage -= 1;
         }
     }
 
-    // Row action handler for viewing products
     handleRowAction(event) {
         const actionName = event.detail.action.name;
         const row = event.detail.row;
-        
+
         if (actionName === CONSTANTS.ACTIONS.VIEW_PRODUCTS) {
             this.loading = true;
             this.selectedOpportunityName = row.name;
-            
+
             getOpportunityProducts({ opportunityId: row.id })
                 .then(result => {
                     this.opportunityProducts = result;
@@ -233,14 +231,12 @@ export default class SalesStatistics extends NavigationMixin(LightningElement) {
         }
     }
 
-    // Modal handlers
     closeModal() {
         this.isModalOpen = false;
         this.selectedOpportunityName = CONSTANTS.EMPTY_STRING;
         this.opportunityProducts = [];
     }
 
-    // Getters for component state
     get isRecordPage() {
         return !!this.recordId;
     }
@@ -261,7 +257,6 @@ export default class SalesStatistics extends NavigationMixin(LightningElement) {
         return Array.isArray(this.accounts) && this.accounts.length > 0;
     }
 
-    // Error handling
     handleError(error) {
         console.error(`${CONSTANTS.LABELS.ERROR_PREFIX}`, error);
         this.error = error;
@@ -269,14 +264,7 @@ export default class SalesStatistics extends NavigationMixin(LightningElement) {
         this.loading = false;
     }
 
-    // Lifecycle hooks
     connectedCallback() {
         this.loading = true;
-    }
-
-    renderedCallback() {
-        if (this.error) {
-            // TODO: Show error toast
-        }
     }
 }
