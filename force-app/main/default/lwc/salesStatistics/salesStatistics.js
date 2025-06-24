@@ -31,7 +31,8 @@ const CONSTANTS = {
         VIEW_PRODUCTS: 'View Products',
         PRODUCT: 'Product',
         QUANTITY: 'Quantity',
-        TOTAL_PRICE: 'Total Price'
+        TOTAL_PRICE: 'Total Price',
+        ACCOUNT_NAME: 'Account Name'
     },
     FIELD_NAMES: {
         NAME_URL: 'nameUrl',
@@ -41,7 +42,8 @@ const CONSTANTS = {
         AMOUNT: 'amount',
         PRODUCT_NAME: 'productName',
         QUANTITY: 'quantity',
-        TOTAL_PRICE: 'totalPrice'
+        TOTAL_PRICE: 'totalPrice',
+        ACCOUNT_NAME: 'accountName'
     },
     VARIANTS: {
         BRAND: 'brand',
@@ -72,9 +74,14 @@ export default class SalesStatistics extends NavigationMixin(LightningElement) {
     isModalOpen = false;
     selectedOpportunityName = CONSTANTS.EMPTY_STRING;
     opportunityProducts = [];
-    accounts = [];
+    opportunities = [];
 
     columns = [
+        {
+            label: CONSTANTS.LABELS.ACCOUNT_NAME,
+            fieldName: CONSTANTS.FIELD_NAMES.ACCOUNT_NAME,
+            type: CONSTANTS.COLUMN_TYPES.TEXT
+        },
         {
             label: CONSTANTS.LABELS.OPPORTUNITY_NAME,
             fieldName: CONSTANTS.FIELD_NAMES.NAME_URL,
@@ -140,7 +147,6 @@ export default class SalesStatistics extends NavigationMixin(LightningElement) {
         }
     ];
 
-    // Используем recordId как accountId для фильтрации (если нужно)
     get accountId() {
         return this.recordId || null;
     }
@@ -154,18 +160,13 @@ export default class SalesStatistics extends NavigationMixin(LightningElement) {
     })
     wiredAccounts({ error, data }) {
         if (data) {
-            const formatter = new Intl.NumberFormat('ru-RU', {
-                style: 'currency',
-                currency: 'RUB'
-            });
-            this.accounts = data.accounts.map(account => ({
-                ...account,
-                accordionLabel: `${account.name} (Всего: ${formatter.format(account.totalAmount)})`,
-                opportunities: account.opportunities.map(opp => ({
+            this.opportunities = data.accounts.flatMap(account => 
+                account.opportunities.map(opp => ({
                     ...opp,
-                    nameUrl: CONSTANTS.URL_PREFIX + opp.id
+                    nameUrl: CONSTANTS.URL_PREFIX + opp.id,
+                    accountName: account.name
                 }))
-            }));
+            );
             this.totalRecords = data.totalRecords;
             this.error = undefined;
             this.loading = false;
@@ -175,7 +176,6 @@ export default class SalesStatistics extends NavigationMixin(LightningElement) {
         }
     }
 
-    // Ставим loading = true при начале нового запроса
     handleSearchChange(event) {
         this.loading = true;
         this.searchTerm = event.target.value;
@@ -253,14 +253,14 @@ export default class SalesStatistics extends NavigationMixin(LightningElement) {
         return this.currentPage >= this.totalPages;
     }
 
-    get hasAccounts() {
-        return Array.isArray(this.accounts) && this.accounts.length > 0;
+    get hasOpportunities() {
+        return Array.isArray(this.opportunities) && this.opportunities.length > 0;
     }
 
     handleError(error) {
         console.error(`${CONSTANTS.LABELS.ERROR_PREFIX}`, error);
         this.error = error;
-        this.accounts = [];
+        this.opportunities = [];
         this.loading = false;
     }
 

@@ -17,7 +17,6 @@ private class SalesStatisticsControllerTest {
         );
         insert opp1;
 
-        // Создаем проигранную сделку
         Opportunity opp2 = new Opportunity(
             Name = 'Opportunity 2',
             StageName = 'Closed Lost',
@@ -29,7 +28,6 @@ private class SalesStatisticsControllerTest {
 
         Test.startTest();
 
-        // Вызываем метод — фильтруем по AccountId, минимальной сумме 800
         SalesStatisticsController.AccountSearchResult resultFiltered = 
             SalesStatisticsController.getAccountOpportunities(
                 acc1.Id,
@@ -48,7 +46,6 @@ private class SalesStatisticsControllerTest {
         
         System.debug('Total amount: ' + accSummary.totalAmount);
 
-        // Проверяем сумму — ожидаем 10000, так как только Closed Won сделки учитываются
         System.assertEquals(10000, accSummary.totalAmount, 'Total amount should match');
 
         System.assert(accSummary.opportunities.size() > 0, 'Opportunities list should not be empty');

@@ -23,8 +23,8 @@
 
     <template if:true={isLoading}>
         <div class="slds-align_absolute-center slds-m-vertical_large">
-          <lightning-spinner alternative-text="Загрузка данных счета" if:true={isLoading}></lightning-spinner>
-            <div class="slds-m-top_small">Generating invoice, please wait...</div>
+            <lightning-spinner alternative-text="Generating invoice data" if:true={isLoading}></lightning-spinner>
+            <div>Generating invoice, please wait...</div>
         </div>
     </template>
     
@@ -34,7 +34,7 @@
             <span class="slds-icon_container slds-icon-utility-error">
                 <lightning-icon icon-name="utility:error" size="small"></lightning-icon>
             </span>
-            <h2>{error}</h2>
+            <h2>{error}</h2> 
         </div>
         <div class="slds-m-top_medium slds-text-align_center">
             <lightning-button label="Close" onclick={handleCancel}></lightning-button>

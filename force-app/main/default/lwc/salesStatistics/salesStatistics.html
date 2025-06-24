@@ -1,80 +1,60 @@
 <template>
-    <lightning-card title="Sales Statistics" icon-name="standard:account">
+    <lightning-quick-action-panel header="Send Invoice">
         <div class="slds-p-around_medium">
-
-            <!-- Search and filter -->
             <lightning-input
-                type="search"
-                label="Поиск по названию аккаунта"
-                value={searchTerm}
-                onchange={handleSearchChange}>
+                label="Subject"
+                value={emailSubject}
+                onchange={handleSubjectChange}>
+            </lightning-input>
+
+            <lightning-combobox
+                label="Email Template"
+                value={selectedTemplate}
+                options={templateOptions}
+                onchange={handleTemplateChange}>
+            </lightning-combobox>
+
+            <lightning-input
+                label="To"
+                value={recipientName}
+                onchange={handleRecipientNameChange}>
             </lightning-input>
 
             <lightning-input
-                type="number"
-                label="Минимальная сумма Opportunities"
-                value={minAmount}
-                onchange={handleAmountChange}>
+                label="Email"
+                value={recipientEmail}
+                onchange={handleRecipientEmailChange}>
             </lightning-input>
 
-            <!-- Accounts and Opportunities -->
-            <template if:true={hasAccounts}>
-                <template for:each={accounts} for:item="account">
-                    <lightning-accordion key={account.id}>
-                        <lightning-accordion-section name={account.id} label={account.accordionLabel}>
-                            <lightning-datatable
-                                key-field="id"
-                                data={account.opportunities}
-                                columns={columns}
-                                onrowaction={handleRowAction}>
-                            </lightning-datatable>
-                        </lightning-accordion-section>
-                    </lightning-accordion>
-                </template>
-            </template>
-            <template if:true={loading}>
-                <lightning-spinner alternative-text="Loading"></lightning-spinner>
-            </template>
-            <template if:true={error}>
-                <div class="slds-text-color_error">{error}</div>
-            </template>
+            <lightning-textarea
+                label="Email Body"
+                value={emailBody}
+                onchange={handleBodyChange}>
+            </lightning-textarea>
 
-            <!-- Pagination -->
-            <div class="slds-m-top_medium">
+            <div class="slds-m-top_medium slds-grid slds-grid_align-spread">
                 <lightning-button
-                    label="Предыдущая"
-                    onclick={handlePrevious}
-                    disabled={isFirstPage}>
+                    label="Preview Invoice"
+                    onclick={handlePreview}
+                    variant="neutral"
+                    class="slds-m-right_small">
                 </lightning-button>
-                <span class="slds-m-horizontal_small">Страница {currentPage} из {totalPages}</span>
-                <lightning-button
-                    label="Следующая"
-                    onclick={handleNext}
-                    disabled={isLastPage}>
-                </lightning-button>
+                
+                <div>
+                    <lightning-button
+                        label="Cancel"
+                        variant="neutral"
+                        onclick={handleCancel}
+                        class="slds-m-right_small">
+                    </lightning-button>
+                    <lightning-button
+                        label="Send"
+                        variant="brand"
+                        onclick={handleSend}
+                        disabled={isSending}>
+                    </lightning-button>
+                </div>
             </div>
         </div>
-    </lightning-card>
-
-    <!-- Modal -->
-    <template if:true={isModalOpen}>
-        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
-            <div class="slds-modal__container">
-                <header class="slds-modal__header">
-                    <h2 class="slds-modal__title">{selectedOpportunityName} — Продукты</h2>
-                </header>
-                <div class="slds-modal__content">
-                    <lightning-datatable
-                        key-field="id"
-                        data={opportunityProducts}
-                        columns={productColumns}>
-                    </lightning-datatable>
-                </div>
-                <footer class="slds-modal__footer">
-                    <lightning-button variant="neutral" label="Закрыть" onclick={closeModal}></lightning-button>
-                </footer>
-            </div>
-        </section>
-        <div class="slds-backdrop slds-backdrop_open"></div>
-    </template>
+    </lightning-quick-action-panel>
 </template>

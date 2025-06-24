@@ -1,7 +1,7 @@
-<apex:page controller="InvoiceController" 
-           renderAs="pdf" 
-           applyBodyTag="false" 
-           showHeader="false" 
+<apex:page controller="InvoiceController"
+           renderAs="pdf"
+           applyBodyTag="false"
+           showHeader="false"
            applyHtmlTag="false"
            sidebar="false">
 <head>
@@ -10,39 +10,29 @@
         @page {
             size: A4;
             margin: 15mm;
+            /* Если вы хотите, чтобы нижний колонтитул был на каждой странице,
+               используйте правила @page для нижнего колонтитула.
+               Это самый надежный способ для сквозного нижнего колонтитула в PDF.
+               Вам нужно будет также определить элемент с ID "docFooter" в теле документа
+               и использовать content: element(docFooter);
+            */
+            /*
+            @bottom-center {
+                content: element(docFooter);
+                font-size: 8pt;
+                color: white;
+                background-color: #ff4700;
+                padding: 8pt 0;
+                width: 100%;
+            }
+            */
         }
 
         html, body {
-            height: 100%;
+            height: auto; /* Разрешить содержимому течь естественным образом */
             margin: 0;
             padding: 0;
         }
-
-        .page-container {
-            display: table;
-            width: 100%;
-            height: 100%;
-            table-layout: fixed;
-        }
-
-        .page-content {
-            display: table-row;
-            height: 100%;
-        }
-
-        .footer {
-            display: table-row;
-            height: 1px;
-            text-align: center;
-            font-size: 8pt;
-            background-color: #ff4700;
-            color: white;
-            border-top: 1pt solid #ddd;
-            padding: 8pt 0;
-        }
-.products-table thead {
-    display: table-header-group;
-}
 
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -63,6 +53,7 @@
             margin-bottom: 15pt;
             padding-bottom: 10pt;
             border-bottom: 1pt solid #ddd;
+            page-break-after: avoid; /* Предотвращает разрыв страницы после шапки */
         }
 
         .logo-section {
@@ -139,8 +130,9 @@
 
         .bill-to-section {
             margin: 20pt 0 15pt;
-            padding: 0 0 10pt 0; 
+            padding-bottom: 10pt;
             border-bottom: 1pt solid #ddd;
+            page-break-after: avoid; /* Предотвращает разрыв страницы после "Bill To" */
         }
 
         .section-title {
@@ -155,11 +147,15 @@
             border-collapse: collapse;
             margin: 15pt 0 5pt;
             font-size: 8.5pt;
-            page-break-inside: avoid;
         }
 
         .products-table thead {
-            display: table-header-group;
+            display: table-header-group; /* Ключевое CSS-свойство для повторения заголовка */
+            page-break-after: avoid; /* Дополнительная попытка помочь движку */
+        }
+
+        .products-table tbody {
+            /* display: table-row-group; по умолчанию для tbody */
         }
 
         .products-table th {
@@ -169,21 +165,15 @@
             text-align: left;
             font-weight: bold;
             border-bottom: 1pt solid #ddd;
-            font-size: 8.5pt;
         }
 
         .products-table td {
             padding: 6pt 8pt;
             border-bottom: 1pt solid #eee;
-            font-size: 8.5pt;
         }
 
         .products-table tr {
-            page-break-inside: avoid;
-        }
-
-        .totals-row {
-            background: #f8f9fa;
+            page-break-inside: avoid; /* Помогает предотвратить разрыв строк */
         }
 
         .totals-label {
@@ -201,87 +191,110 @@
             color: #e91e63;
             font-size: 10pt;
         }
+
+        /* Стиль для нижнего колонтитула */
+        .footer {
+            text-align: center;
+            font-size: 8pt;
+            background-color: #ff4700;
+            color: white;
+            border-top: 1pt solid #ddd;
+            padding: 8pt 0;
+            margin-top: 20pt;
+            /* Если используете @page для нижнего колонтитула,
+               этот footer будет использоваться только для последней страницы.
+               Для сквозного нижнего колонтитула удалите этот div и используйте только @page.
+            */
+            /*
+            -fs-page-sequence: start; /* Может помочь при использовании @page */
+            -fs-block-flow: paginate;
+            */
+        }
     </style>
 </head>
 <body>
-    <div class="page-container">
-        <div class="page-content">
-            <div>
-                <div class="top-line"></div>
+    <div> <div class="top-line"></div>
 
-                <div class="header">
-                    <div class="logo-section">
-                        <div class="logo-placeholder">
-                            COMPANY<br />LOGO
-                        </div>
-                    </div>
-
-                    <div class="company-info">
-                        <div class="company-name">{!companyName}</div>
-                        <div>{!companyAddress}</div>
-                        <div class="opportunity-owner">Opportunity Owner: {!opportunityOwner}</div>
-                    </div>
-
-                    <div class="invoice-info">
-                        <div class="invoice-detail">
-                            <span class="invoice-label">DATE:</span> {!todayDate}
-                            <div class="invoice-hr"></div>
-                        </div>
-                        <div class="invoice-detail">
-                            <span class="invoice-label">INVOICE NO:</span> {!invoiceNumber}
-                            <div class="invoice-hr"></div>
-                        </div>
-                    </div>
+        <div class="header">
+            <div class="logo-section">
+                <div class="logo-placeholder">
+                    COMPANY<br />LOGO
                 </div>
+            </div>
 
-                <div class="bill-to-section">
-                    <div class="section-title">Bill To</div>
-                    <div>Contact Name : {!contactName}</div>
-                    <div>Account Name : {!accountName}</div>
-                    <div>Contact Phone : {!contactPhone}</div>
-                    <div>Contact Email : {!contactEmail}</div>
+            <div class="company-info">
+                <div class="company-name">{!companyName}</div>
+                <div>{!companyAddress}</div>
+                <div class="opportunity-owner">Opportunity Owner: {!opportunityOwner}</div>
+            </div>
+
+            <div class="invoice-info">
+                <div class="invoice-detail">
+                    <span class="invoice-label">DATE:</span> {!todayDate}
+                    <div class="invoice-hr"></div>
                 </div>
-
-                <table class="products-table" style="width: 100%; border-collapse: collapse;">
-    <thead>
-        <tr>
-            <th style="background: #ff4700; color: white; padding: 6pt;">PRODUCT NAME</th>
-            <th style="background: #ff4700; color: white; padding: 6pt;">QTY</th>
-            <th style="background: #ff4700; color: white; padding: 6pt;">UNIT PRICE</th>
-            <th style="background: #ff4700; color: white; padding: 6pt;">TOTAL</th>
-        </tr>
-    </thead>
-    <tbody>
-        <apex:repeat value="{!products}" var="item">
-            <tr>
-                <td>{!item.productName}</td>
-                <td>
-                    <apex:outputText value="{0,number,#,##0}">
-                        <apex:param value="{!item.quantity}" />
-                    </apex:outputText>
-                </td>
-                <td>
-                    {!currencySymbol}
-                    <apex:outputText value="{0,number,#,##0.00}">
-                        <apex:param value="{!item.unitPrice}" />
-                    </apex:outputText>
-                </td>
-                <td>
-                    {!currencySymbol}
-                    <apex:outputText value="{0,number,#,##0.00}">
-                        <apex:param value="{!item.totalPrice}" />
-                    </apex:outputText>
-                </td>
-            </tr>
-        </apex:repeat>
-    </tbody>
-</table>
+                <div class="invoice-detail">
+                    <span class="invoice-label">INVOICE NO:</span> {!invoiceNumber}
+                    <div class="invoice-hr"></div>
+                </div>
             </div>
         </div>
 
-        <div class="footer">
-            <div>{!companyName} | {!companyAddress}</div>
+        <div class="bill-to-section">
+            <div class="section-title">Bill To</div>
+            <div>Contact Name : {!contactName}</div>
+            <div>Account Name : {!accountName}</div>
+            <div>Contact Phone : {!contactPhone}</div>
+            <div>Contact Email : {!contactEmail}</div>
         </div>
+
+        <table class="products-table">
+            <thead>
+                <tr>
+                    <th>PRODUCT NAME</th>
+                    <th>QTY</th>
+                    <th>UNIT PRICE</th>
+                    <th>TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                <apex:repeat value="{!products}" var="item">
+                    <tr>
+                        <td>{!item.productName}</td>
+                        <td>
+                            <apex:outputText value="{0,number,#,##0}">
+                                <apex:param value="{!item.quantity}" />
+                            </apex:outputText>
+                        </td>
+                        <td>
+                            {!currencySymbol}
+                            <apex:outputText value="{0,number,#,##0.00}">
+                                <apex:param value="{!item.unitPrice}" />
+                            </apex:outputText>
+                        </td>
+                        <td>
+                            {!currencySymbol}
+                            <apex:outputText value="{0,number,#,##0.00}">
+                                <apex:param value="{!item.totalPrice}" />
+                            </apex:outputText>
+                        </td>
+                    </tr>
+                </apex:repeat>
+            </tbody>
+        </table>
+
+    </div> <div style="width: 100%; text-align: right; margin-top: 15pt; padding-top: 10pt; border-top: 1pt solid #ddd;">
+        <span class="totals-label">TOTAL AMOUNT:</span>
+        <span class="final-amount">
+            {!currencySymbol}
+            <apex:outputText value="{0,number,#,##0.00}">
+                <apex:param value="{!totalAmount}" />
+            </apex:outputText>
+        </span>
+    </div>
+
+    <div class="footer" id="docFooter">
+        <div>{!companyName} | {!companyAddress}</div>
     </div>
 </body>
 </apex:page>

@@ -1,6 +1,7 @@
 import { LightningElement, api, wire } from 'lwc';
 import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import { CloseActionScreenEvent } from 'lightning/actions';
 
 import getPrimaryContact from '@salesforce/apex/InvoiceController.getPrimaryContact';
 import getEmailTemplates from '@salesforce/apex/InvoiceController.getEmailTemplates';
@@ -31,19 +32,9 @@ export default class SendInvoiceModal extends LightningElement {
     invoiceId = '';
 
     _dataLoaded = false;
-    outsideClickHandler; // <- ключевая переменная
 
     @wire(getRecord, { recordId: '$recordId', fields: OPPORTUNITY_FIELDS })
     opportunity;
-
-    connectedCallback() {
-        this.outsideClickHandler = this.handleOutsideClick.bind(this);
-        document.addEventListener('click', this.outsideClickHandler);
-    }
-
-    disconnectedCallback() {
-        document.removeEventListener('click', this.outsideClickHandler);
-    }
 
     async renderedCallback() {
         if (this.recordId && !this._dataLoaded) {
@@ -55,14 +46,15 @@ export default class SendInvoiceModal extends LightningElement {
     async loadData() {
         try {
             if (!this.recordId) {
-                this.showError('Ошибка', 'recordId не передан');
+                this.showError('Error', 'Record ID is not provided.');
                 return;
             }
 
             const contact = await getPrimaryContact({ opportunityId: this.recordId });
 
             if (!contact || !contact.email) {
-                this.showError('Ошибка', 'Не найден основной контакт или email');
+                this.showError('Error', 'Primary contact or email not found for this opportunity.');
+                this.closeAction(); 
                 return;
             }
 
@@ -71,9 +63,9 @@ export default class SendInvoiceModal extends LightningElement {
 
             if (this.opportunity && this.opportunity.data) {
                 const invoiceNumber = getFieldValue(this.opportunity.data, 'Opportunity.Invoice_Number__c') || '';
-                this.emailSubject = `Invoice for Order ${invoiceNumber}`;
+                this.emailSubject = `Invoice for Opportunity ${invoiceNumber}`;
             } else {
-                this.emailSubject = 'Invoice for Order';
+                this.emailSubject = 'Invoice for Opportunity';
             }
 
             const templates = await getEmailTemplates();
@@ -82,9 +74,13 @@ export default class SendInvoiceModal extends LightningElement {
             const invoiceLinks = await this.getLatestInvoice();
             if (invoiceLinks?.length > 0) {
                 this.invoiceId = invoiceLinks[0].ContentDocumentId;
+            } else {
+                this.showError('Error', 'No invoice PDF found to attach. Please generate an invoice first.');
+                this.closeAction();
             }
+
         } catch (error) {
-            this.showError('Ошибка загрузки', error.body?.message || error.message);
+            this.showError('Loading Error', this.parseError(error));
         }
     }
 
@@ -95,7 +91,7 @@ export default class SendInvoiceModal extends LightningElement {
                 fileType: 'PDF'
             });
         } catch (error) {
-            this.showError('Ошибка загрузки инвойса', error.body?.message || error.message);
+            this.showError('Invoice Loading Error', this.parseError(error));
             return [];
         }
     }
@@ -116,7 +112,7 @@ export default class SendInvoiceModal extends LightningElement {
                 opportunityId: this.recordId
             });
         } catch (error) {
-            this.showError('Ошибка загрузки шаблона', error.body?.message || error.message);
+            this.showError('Template Loading Error', this.parseError(error));
         }
     }
 
@@ -138,7 +134,7 @@ export default class SendInvoiceModal extends LightningElement {
 
     handlePreview() {
         if (!this.invoiceId) {
-            this.showError('Нет инвойса', 'PDF инвойс не найден');
+            this.showError('Invoice Missing', 'No PDF invoice found to preview.');
             return;
         }
         window.open(`${window.location.origin}/sfc/servlet.shepherd/document/download/${this.invoiceId}`, '_blank');
@@ -146,12 +142,17 @@ export default class SendInvoiceModal extends LightningElement {
 
     async handleSend() {
         if (!this.recipientEmail) {
-            this.showError('Email получателя пустой', 'Укажите email');
+            this.showError('Recipient Email Required', 'Please enter a recipient email address.');
             return;
         }
 
         if (!this.selectedTemplate) {
-            this.showError('Шаблон не выбран', 'Выберите шаблон письма');
+            this.showError('Template Required', 'Please select an email template.');
+            return;
+        }
+
+        if (!this.invoiceId) {
+            this.showError('Invoice Missing', 'Cannot send email: No invoice PDF found to attach.');
             return;
         }
 
@@ -165,10 +166,10 @@ export default class SendInvoiceModal extends LightningElement {
                 toAddress: this.recipientEmail
             });
 
-            this.showSuccess('Отправлено', 'Инвойс отправлен успешно');
+            this.showSuccess('Sent', 'Invoice email sent successfully!');
             this.closeAction();
         } catch (error) {
-            this.showError('Ошибка отправки', error.body?.message || error.message);
+            this.showError('Sending Error', this.parseError(error));
         } finally {
             this.isSending = false;
         }
@@ -178,28 +179,35 @@ export default class SendInvoiceModal extends LightningElement {
         this.closeAction();
     }
 
-    handleOutsideClick(event) {
-        const modal = this.template.querySelector('.slds-p-around_medium');
-        const panel = this.template.querySelector('lightning-quick-action-panel');
-        const path = event.composedPath();
-
-        const clickedInsideModal = modal && path.includes(modal);
-        const clickedInsidePanel = panel && path.includes(panel);
-
-        if (!clickedInsideModal && clickedInsidePanel) {
-            this.closeAction();
-        }
-    }
-
     showSuccess(title, message) {
         this.dispatchEvent(new ShowToastEvent({ title, message, variant: 'success' }));
     }
 
     showError(title, message) {
-        this.dispatchEvent(new ShowToastEvent({ title, message, variant: 'error' }));
+        this.dispatchEvent(new ShowToastEvent({ title, message, variant: 'error', mode: 'sticky' }));
     }
 
     closeAction() {
-        this.dispatchEvent(new CustomEvent('close'));
+        this.dispatchEvent(new CloseActionScreenEvent());
+    }
+
+    parseError(error) {
+        let message = 'An unexpected error occurred.';
+        if (error) {
+            if (error.body) {
+                if (Array.isArray(error.body.output?.errors) && error.body.output.errors.length > 0) {
+                    message = error.body.output.errors[0].message;
+                } else if (error.body.message) {
+                    message = error.body.message;
+                } else if (typeof error.body === 'string') {
+                    message = error.body;
+                }
+            } else if (error.message) {
+                message = error.message;
+            } else if (typeof error === 'string') {
+                message = error;
+            }
+        }
+        return message;
     }
 }

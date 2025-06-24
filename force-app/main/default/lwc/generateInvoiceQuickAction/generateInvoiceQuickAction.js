@@ -10,7 +10,6 @@ export default class GenerateInvoiceQuickAction extends LightningElement {
     showActions = true;
     timeoutId;
 
-    // Add proper cleanup
     disconnectedCallback() {
         if (this.timeoutId) {
             clearTimeout(this.timeoutId);
@@ -38,7 +37,7 @@ export default class GenerateInvoiceQuickAction extends LightningElement {
     }
 
     handleTimeout() {
-        this.handleError(new Error('Operation timed out after 10 seconds'));
+        this.handleError(new Error('Operation timed out after 10 seconds. Please try again.'));
     }
 
     showSuccess() {
@@ -51,18 +50,37 @@ export default class GenerateInvoiceQuickAction extends LightningElement {
     }
 
     handleError(error) {
-        console.error('Error:', error);
-        this.error = this.parseError(error);
+        console.error('Error generating invoice:', error);
+        this.error = this.parseError(error); 
         this.isLoading = false;
         this.showActions = true;
         this.dispatchEvent(new ShowToastEvent({
-            title: 'Error',
+            title: 'Error generating invoice',
             message: this.error,
-            variant: 'error'
+            variant: 'error',
+            mode: 'sticky'
         }));
     }
 
+    handleCancel() {
+        this.dispatchEvent(new CloseActionScreenEvent());
+    }
+
     parseError(error) {
-        //... existing error parsing logic
+        let message = 'An unknown error occurred.';
+        if (error) {
+            if (error.body) {
+                if (Array.isArray(error.body.output.errors) && error.body.output.errors.length > 0) {
+                    message = error.body.output.errors[0].message;
+                } else if (error.body.message) {
+                    message = error.body.message;
+                }
+            } else if (error.message) {
+                message = error.message;
+            } else if (typeof error === 'string') {
+                message = error;
+            }
+        }
+        return message;
     }
 }

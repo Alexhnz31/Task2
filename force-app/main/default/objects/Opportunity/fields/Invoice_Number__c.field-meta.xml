@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fields>
-        <fullName>Invoice_Number__c</fullName>
-        <displayFormat>INV-{000000}</displayFormat>
-        <externalId>false</externalId>
-        <label>Invoice Number</label>
-        <trackTrending>false</trackTrending>
-        <type>AutoNumber</type>
-    </fields>
-</CustomObject>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Invoice_Number__c</fullName>
+    <description>Номер счета автоматической генерации</description>
+    <displayFormat>INV-{000000}</displayFormat>
+    <externalId>false</externalId>
+    <label>Invoice Number</label>
+    <trackTrending>false</trackTrending>
+    <type>AutoNumber</type>
+</CustomField>
