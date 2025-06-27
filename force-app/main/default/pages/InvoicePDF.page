@@ -1,0 +1,300 @@
+<apex:page controller="InvoiceController"
+           renderAs="pdf"
+           applyBodyTag="false"
+           showHeader="false"
+           applyHtmlTag="false"
+           sidebar="false">
+<head>
+    <meta charset="UTF-8"/>
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm;
+            /* Если вы хотите, чтобы нижний колонтитул был на каждой странице,
+               используйте правила @page для нижнего колонтитула.
+               Это самый надежный способ для сквозного нижнего колонтитула в PDF.
+               Вам нужно будет также определить элемент с ID "docFooter" в теле документа
+               и использовать content: element(docFooter);
+            */
+            /*
+            @bottom-center {
+                content: element(docFooter);
+                font-size: 8pt;
+                color: white;
+                background-color: #ff4700;
+                padding: 8pt 0;
+                width: 100%;
+            }
+            */
+        }
+
+        html, body {
+            height: auto; /* Разрешить содержимому течь естественным образом */
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-size: 9pt;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .top-line {
+            height: 3pt;
+            background-color: #ff4700;
+            margin-bottom: 15pt;
+        }
+
+        .header {
+            display: table;
+            width: 100%;
+            margin-bottom: 15pt;
+            padding-bottom: 10pt;
+            border-bottom: 1pt solid #ddd;
+            page-break-after: avoid; /* Предотвращает разрыв страницы после шапки */
+        }
+
+        .logo-section {
+            display: table-cell;
+            width: 30%;
+            vertical-align: top;
+        }
+
+        .logo-placeholder {
+            width: 60pt;
+            height: 60pt;
+            background: #f8f9fa;
+            border: 1pt solid #ddd;
+            border-radius: 4pt;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 7pt;
+            text-align: center;
+        }
+
+        .company-info {
+            display: table-cell;
+            width: 40%;
+            vertical-align: top;
+            padding: 0 8pt;
+            font-size: 8pt;
+        }
+
+        .company-name {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 4pt;
+        }
+
+        .opportunity-owner {
+            margin-top: 3pt;
+            font-size: 8pt;
+            color: #666;
+        }
+
+        .invoice-info {
+            display: table-cell;
+            width: 30%;
+            vertical-align: top;
+            text-align: right;
+            font-size: 8pt;
+        }
+
+        .invoice-detail {
+            margin-bottom: 4pt;
+            position: relative;
+            padding-bottom: 6pt;
+        }
+
+        .invoice-label {
+            font-weight: bold;
+            display: inline-block;
+            width: 70pt;
+            color: #555;
+        }
+
+        .invoice-hr {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 50pt;
+            border: none;
+            border-top: 1pt solid #3498db;
+            margin: 0;
+        }
+
+        .bill-to-section {
+            margin: 20pt 0 15pt;
+            padding-bottom: 10pt;
+            border-bottom: 1pt solid #ddd;
+            page-break-after: avoid; /* Предотвращает разрыв страницы после "Bill To" */
+        }
+
+        .section-title {
+            font-size: 9pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 6pt;
+        }
+
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15pt 0 5pt;
+            font-size: 8.5pt;
+        }
+
+        .products-table thead {
+            display: table-header-group; /* Ключевое CSS-свойство для повторения заголовка */
+            page-break-after: avoid; /* Дополнительная попытка помочь движку */
+        }
+
+        .products-table tbody {
+            /* display: table-row-group; по умолчанию для tbody */
+        }
+
+        .products-table th {
+            background: #ff4700;
+            color: white;
+            padding: 6pt 8pt;
+            text-align: left;
+            font-weight: bold;
+            border-bottom: 1pt solid #ddd;
+        }
+
+        .products-table td {
+            padding: 6pt 8pt;
+            border-bottom: 1pt solid #eee;
+        }
+
+        .products-table tr {
+            page-break-inside: avoid; /* Помогает предотвратить разрыв строк */
+        }
+
+        .totals-label {
+            text-align: right;
+            font-weight: bold;
+            padding-right: 10pt !important;
+            font-size: 9pt;
+        }
+
+        .totals-value {
+            font-weight: bold;
+        }
+
+        .final-amount {
+            color: #e91e63;
+            font-size: 10pt;
+        }
+
+        /* Стиль для нижнего колонтитула */
+        .footer {
+            text-align: center;
+            font-size: 8pt;
+            background-color: #ff4700;
+            color: white;
+            border-top: 1pt solid #ddd;
+            padding: 8pt 0;
+            margin-top: 20pt;
+            /* Если используете @page для нижнего колонтитула,
+               этот footer будет использоваться только для последней страницы.
+               Для сквозного нижнего колонтитула удалите этот div и используйте только @page.
+            */
+            /*
+            -fs-page-sequence: start; /* Может помочь при использовании @page */
+            -fs-block-flow: paginate;
+            */
+        }
+    </style>
+</head>
+<body>
+    <div> <div class="top-line"></div>
+
+        <div class="header">
+            <div class="logo-section">
+                <div class="logo-placeholder">
+                    COMPANY<br />LOGO
+                </div>
+            </div>
+
+            <div class="company-info">
+                <div class="company-name">{!companyName}</div>
+                <div>{!companyAddress}</div>
+                <div class="opportunity-owner">Opportunity Owner: {!opportunityOwner}</div>
+            </div>
+
+            <div class="invoice-info">
+                <div class="invoice-detail">
+                    <span class="invoice-label">DATE:</span> {!todayDate}
+                    <div class="invoice-hr"></div>
+                </div>
+                <div class="invoice-detail">
+                    <span class="invoice-label">INVOICE NO:</span> {!invoiceNumber}
+                    <div class="invoice-hr"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bill-to-section">
+            <div class="section-title">Bill To</div>
+            <div>Contact Name : {!contactName}</div>
+            <div>Account Name : {!accountName}</div>
+            <div>Contact Phone : {!contactPhone}</div>
+            <div>Contact Email : {!contactEmail}</div>
+        </div>
+
+        <table class="products-table">
+            <thead>
+                <tr>
+                    <th>PRODUCT NAME</th>
+                    <th>QTY</th>
+                    <th>UNIT PRICE</th>
+                    <th>TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                <apex:repeat value="{!products}" var="item">
+                    <tr>
+                        <td>{!item.productName}</td>
+                        <td>
+                            <apex:outputText value="{0,number,#,##0}">
+                                <apex:param value="{!item.quantity}" />
+                            </apex:outputText>
+                        </td>
+                        <td>
+                            {!currencySymbol}
+                            <apex:outputText value="{0,number,#,##0.00}">
+                                <apex:param value="{!item.unitPrice}" />
+                            </apex:outputText>
+                        </td>
+                        <td>
+                            {!currencySymbol}
+                            <apex:outputText value="{0,number,#,##0.00}">
+                                <apex:param value="{!item.totalPrice}" />
+                            </apex:outputText>
+                        </td>
+                    </tr>
+                </apex:repeat>
+            </tbody>
+        </table>
+
+    </div> <div style="width: 100%; text-align: right; margin-top: 15pt; padding-top: 10pt; border-top: 1pt solid #ddd;">
+        <span class="totals-label">TOTAL AMOUNT:</span>
+        <span class="final-amount">
+            {!currencySymbol}
+            <apex:outputText value="{0,number,#,##0.00}">
+                <apex:param value="{!totalAmount}" />
+            </apex:outputText>
+        </span>
+    </div>
+
+    <div class="footer" id="docFooter">
+        <div>{!companyName} | {!companyAddress}</div>
+    </div>
+</body>
+</apex:page>

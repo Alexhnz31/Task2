@@ -5,8 +5,15 @@
       "default": true
     }
   ],
+<<<<<<< HEAD
   "name": "meow",
   "namespace": "",
   "sfdcLoginUrl": "https://login.salesforce.com",
   "sourceApiVersion": "64.0"
+=======
+  "name": "m2",
+  "namespace": "",
+  "sfdcLoginUrl": "https://login.salesforce.com",
+  "sourceApiVersion": "63.0"
+>>>>>>> f16ba05778c4515087118d0d0f8f446dfbd32d52
 }

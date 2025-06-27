@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EmailTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <available>true</available>
+    <description>Шаблон для отправки счета клиенту</description>
+    <encodingKey>UTF-8</encodingKey>
+    <name>Invoice Email Template</name>
+    <style>none</style>
+    <subject>Invoice {!Opportunity.Invoice_Number__c} for {!Account.Name}</subject>
+    <type>text</type>
+    <uiType>Aloha</uiType>
+    <content>Dear {!Contact.FirstName},
+
+Please find attached the invoice {!Opportunity.Invoice_Number__c} for your recent order with {!Organization.Name}.
+
+Order Details:
+- Invoice Number: {!Opportunity.Invoice_Number__c}
+- Order Amount: {!Opportunity.Amount}
+
+If you have any questions about this invoice, please don't hesitate to contact your account manager {!Opportunity.Owner.Name} at {!Opportunity.Owner.Phone} or {!Opportunity.Owner.Email}.
+
+Thank you for your business!
+
+Best regards,
+{!Organization.Name} Team</content>

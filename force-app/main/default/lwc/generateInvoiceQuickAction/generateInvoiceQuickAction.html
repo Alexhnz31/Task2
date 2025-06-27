@@ -1,0 +1,43 @@
+<template>
+    <template if:true={showActions}>
+        <div class="slds-p-around_medium">
+            <h2 class="slds-text-heading_medium slds-m-bottom_medium">Generate Invoice</h2>
+            <p class="slds-m-bottom_medium">Click the button below to generate an invoice for this opportunity.</p>
+            
+            <div class="slds-grid slds-grid_align-center">
+                <lightning-button
+                    label="Generate Invoice"
+                    variant="brand"
+                    onclick={handleGenerate}
+                    class="slds-m-right_small">
+                </lightning-button>
+                
+                <lightning-button
+                    label="Cancel"
+                    variant="neutral"
+                    onclick={handleCancel}>
+                </lightning-button>
+            </div>
+        </div>
+    </template>
+
+    <template if:true={isLoading}>
+        <div class="slds-align_absolute-center slds-m-vertical_large">
+            <lightning-spinner alternative-text="Generating invoice data" if:true={isLoading}></lightning-spinner>
+            <div>Generating invoice, please wait...</div>
+        </div>
+    </template>
+    
+    <template if:true={error}>
+        <div class="slds-notify slds-notify_alert slds-theme_error" role="alert">
+            <span class="slds-assistive-text">Error</span>
+            <span class="slds-icon_container slds-icon-utility-error">
+                <lightning-icon icon-name="utility:error" size="small"></lightning-icon>
+            </span>
+            <h2>{error}</h2> 
+        </div>
+        <div class="slds-m-top_medium slds-text-align_center">
+            <lightning-button label="Close" onclick={handleCancel}></lightning-button>
+        </div>
+    </template>
+</template>

@@ -1,0 +1,12 @@
+.slds-align_absolute-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+}
+
+.slds-notify_alert {
+    padding: 1rem;
+    border-radius: 0.25rem;
+}
